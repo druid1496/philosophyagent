@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile config.py graph/state.py rag/retriever.py agents/philosopher.py agents/evaluator.py agents/moderator.py graph/debate_graph.py main.py)",
+      "Bash(python3 -m py_compile config.py graph/state.py rag/retriever.py agents/philosopher.py agents/evaluator.py agents/moderator.py graph/debate_graph.py main.py)"
+    ]
+  }
+}
