@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument(
         "--save",
         action="store_true",
-        help="Save the full transcript to a JSON file.",
+        help="Also save the full transcript as a JSON file.",
     )
     return parser.parse_args()
 
@@ -129,10 +129,47 @@ def main():
     print(f"{'#' * 60}\n")
 
     # ------------------------------------------------------------------ Save
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Always write a human-readable .txt transcript
+    txt_filename = f"debate_{timestamp}.txt"
+    with open(txt_filename, "w", encoding="utf-8") as f:
+        f.write("=" * 60 + "\n")
+        f.write("PHILOSOPHICAL DEBATE TRANSCRIPT\n")
+        f.write("=" * 60 + "\n")
+        f.write(f"Topic      : {final_state['topic']}\n")
+        f.write(f"Philosophers: {', '.join(final_state['philosopher_names'])}\n")
+        f.write(f"Rounds     : {args.turns}\n")
+        f.write(f"Date       : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("=" * 60 + "\n\n")
+
+        current_round = -1
+        for msg in final_state["messages"]:
+            round_num = msg["turn"] + 1
+
+            # Print round header when a new round starts (for non-moderator intro)
+            if msg["speaker_type"] == "philosopher" and msg["turn"] != current_round:
+                current_round = msg["turn"]
+                f.write(f"\n{'─' * 60}\n")
+                f.write(f"  ROUND {round_num}\n")
+                f.write(f"{'─' * 60}\n\n")
+
+            if msg["speaker_type"] == "moderator":
+                f.write(f"[MODERATOR]\n{msg['content']}\n\n")
+            elif msg["speaker_type"] == "philosopher":
+                f.write(f"[{msg['speaker_name'].upper()}]\n{msg['content']}\n\n")
+            elif msg["speaker_type"] == "evaluator":
+                f.write(f"  ↳ Evaluation of {msg['speaker_name']}:\n")
+                for line in msg["content"].splitlines():
+                    f.write(f"  {line}\n")
+                f.write("\n")
+
+    print(f"Transcript saved to {txt_filename}")
+
+    # Optionally also save JSON
     if args.save:
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"debate_{timestamp}.json"
-        with open(filename, "w", encoding="utf-8") as f:
+        json_filename = f"debate_{timestamp}.json"
+        with open(json_filename, "w", encoding="utf-8") as f:
             json.dump(
                 {
                     "topic": final_state["topic"],
@@ -145,7 +182,7 @@ def main():
                 ensure_ascii=False,
                 indent=2,
             )
-        print(f"Transcript saved to {filename}")
+        print(f"JSON data saved to {json_filename}")
 
     return final_state
 
