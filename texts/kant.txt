@@ -1,0 +1,71 @@
+KANT: SELECTED PHILOSOPHICAL WRITINGS AND DOCTRINES
+
+=== THE CATEGORICAL IMPERATIVE ===
+
+There is nothing in the world — indeed nothing even beyond the world — that can be called good without qualification except a good will. Talents of the mind, gifts of fortune, and even happiness are good only conditionally: they can be misused. A good will is good not because of its effects or its usefulness but simply because of its willing — it is good in itself.
+
+The moral worth of an action depends not on its consequences but on the principle (maxim) from which it proceeds. An action has moral worth only when done from duty, not merely in conformity with duty. The shopkeeper who charges fair prices for self-interested reasons acts in conformity with duty; the person who acts honestly because honesty is their duty acts from duty. Only the latter has moral worth.
+
+The supreme principle of morality is the Categorical Imperative. It commands unconditionally, not hypothetically ("if you want X, do Y"), but absolutely. I formulate it in three equivalent ways:
+
+FIRST FORMULATION (Formula of Universal Law): "Act only according to that maxim whereby you can at the same time will that it should become a universal law."
+
+A maxim that cannot be universalized without contradiction is impermissible. If I adopt the maxim "I will make a false promise when convenient," I cannot universalize this: a world where everyone makes false promises when convenient destroys the very institution of promising. The maxim is self-defeating when universalized.
+
+SECOND FORMULATION (Formula of Humanity): "Act so that you treat humanity, whether in your own person or in that of another, always as an end and never as a means only."
+
+Every rational being has dignity (Würde) — an incomparable worth that exceeds all price. To use a person merely as a means — as an instrument for one's own ends without regard for their own ends — is to violate their dignity. Slavery, deception, and coercion all treat persons as mere means.
+
+THIRD FORMULATION (Formula of the Kingdom of Ends): "Act according to maxims of a universally legislating member of a merely possible kingdom of ends."
+
+A kingdom of ends is a systematic union of rational beings under common moral laws. Each rational being is both legislator and subject in this ideal community. Morality is the law we give ourselves as rational beings.
+
+=== TRANSCENDENTAL IDEALISM ===
+
+In the Critique of Pure Reason, I undertook what I called a Copernican revolution in philosophy. Just as Copernicus explained celestial motion by making the observer move rather than the stars, I explain the possibility of a priori knowledge by making the object conform to our faculty of cognition rather than the reverse.
+
+Space and time are not properties of things as they are in themselves. They are the pure forms of our outer and inner intuition respectively. We do not discover spatial and temporal relations in reality; we impose them on experience. This is why geometry (grounded in our intuition of space) and arithmetic (grounded in our intuition of time/succession) can be known with certainty prior to experience.
+
+The categories of the understanding — causality, substance, unity, plurality, and others — are likewise pure concepts that the understanding brings to experience. Experience is possible only because the understanding structures the raw manifold of intuition through these categories.
+
+The consequence is fundamental: we can only know things as they appear to us (phenomena), not things as they are in themselves (noumena). The physical world we know is always already filtered through our forms of sensibility and understanding. The thing-in-itself remains forever unknowable.
+
+This means traditional metaphysical questions — Does God exist? Is the soul immortal? Is there freedom? — cannot be answered by theoretical reason. Reason overreaches itself when it tries to apply the categories beyond possible experience. The antinomies of pure reason (the conflicts that arise when reason tries to determine whether the world has a beginning in time, whether there is free will, etc.) show that reason generates contradictions when it ventures beyond experience.
+
+But practical reason has its own domain. In the moral sphere, we must presuppose freedom — for without freedom, moral responsibility is unintelligible. And we may rationally postulate God and immortality as conditions for the highest good (the union of virtue and happiness). These are not theoretical knowledge but rational faith.
+
+=== ON ENLIGHTENMENT ===
+
+Enlightenment is the emergence of humanity from its self-incurred immaturity. Immaturity is the inability to use one's own understanding without the guidance of another. This immaturity is self-incurred when its cause lies not in lack of understanding but in lack of resolution and courage to use it without the guidance of another. "Sapere aude!" (Dare to know!) is therefore the motto of the Enlightenment.
+
+Laziness and cowardice are the reasons why so many people, even after nature has freed them from external guidance, gladly remain immature for life. It is so comfortable to be immature! If I have a book to serve as my understanding, a pastor to serve as my conscience, a doctor to determine my diet, and so on, I need not exert myself at all.
+
+For Enlightenment, nothing is required but freedom — the freedom to make public use of one's reason in all matters. The public use of reason must always be free; the private use may be restricted. A soldier who receives an order must obey (private use), but as a citizen writing about military affairs he must be free to publish his critique (public use).
+
+=== PERPETUAL PEACE AND COSMOPOLITANISM ===
+
+In "Perpetual Peace," I argue that states, like individuals, must subject themselves to public lawful covenants if peace is to be permanent rather than merely a truce. Three definitive articles are required:
+
+First, the civil constitution of every state shall be republican — government by law with separation of powers, protecting the freedom and legal equality of citizens. In a republic, citizens who must bear the costs of war will be reluctant to declare it.
+
+Second, international right shall be based on a federation of free states. States cannot be compelled to enter this federation; it must be voluntary, grounded in mutual interest in peace.
+
+Third, cosmopolitan right shall be limited to conditions of universal hospitality — the right of every person not to be treated as an enemy when arriving in another country.
+
+The guarantee of perpetual peace is not human goodwill but nature itself: commerce, which makes war costly; the antagonism of states, which pushes them toward federation; and the social nature of humanity. Even a race of devils, if intelligent, would organize themselves under laws for mutual benefit.
+
+=== DIGNITY AND THE AUTONOMY OF RATIONAL BEINGS ===
+
+What gives moral actions their worth is autonomy — the capacity of rational beings to give the moral law to themselves through reason. Heteronomy — being governed by desires, inclinations, external authorities — is the source of all spurious moral principles.
+
+Every rational being exists as an end in itself and not merely as a means to be arbitrarily used by this or that will. All rational beings stand under the law: treat humanity always as an end, never merely as a means. This is the ground of human dignity. Dignity is not earned; it belongs to every rational being simply in virtue of rationality.
+
+Human beings have dignity rather than mere price. Whatever has a price can be replaced by something equivalent. What is above all price and therefore has no equivalent — that has dignity. Morality, and humanity insofar as it is capable of morality, alone has dignity. This dignity cannot be bargained away, instrumentalized, or overridden by calculations of utility.
+
+=== ON TECHNOLOGY, PROGRESS, AND HUMAN REASON ===
+
+Reason has an architectonic character: it seeks systematic unity in all its uses. The progress of science and technology represents the unfolding of theoretical reason into nature. But this progress is morally neutral at best, dangerous at worst, if it is not guided by practical reason.
+
+Technology is the extension of human agency into nature, and human agency is subject to moral law. The question of whether a given application of technical power is permissible must be answered not by asking what it can achieve but by asking whether its maxim can be universalized, whether it respects the dignity of rational beings, and whether it serves the kingdom of ends.
+
+The danger of technical progress without moral progress is that we become better and better at satisfying our inclinations while our capacity for autonomous moral agency atrophies. The highest vocation of humanity is not to master nature but to become worthy of happiness — and that is a moral, not a technical, task.
