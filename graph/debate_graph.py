@@ -2,7 +2,7 @@ from langgraph.graph import StateGraph, START, END
 
 from graph.state import DebateState, DebateMessage
 from agents.philosopher import PhilosopherAgent
-from agents.evaluator import EvaluatorAgent
+from agents.director import DirectorAgent
 from agents.moderator import ModeratorAgent
 
 
@@ -11,9 +11,17 @@ def _format_history(messages: list[DebateMessage]) -> str:
         return "No prior exchanges."
     parts = []
     for msg in messages:
-        turn_label = f"Round {msg['turn'] + 1}" if msg["speaker_type"] != "moderator" else "Moderator"
-        parts.append(f"[{turn_label}] {msg['speaker_name']}: {msg['content']}")
+        parts.append(f"[{msg['speaker_name']} ({msg['speaker_type']})]: {msg['content']}")
     return "\n\n".join(parts)
+
+
+def _recent_exchange_text(messages: list[DebateMessage], limit: int = 10) -> str:
+    tail = messages[-limit:]
+    lines = []
+    for m in tail:
+        excerpt = m["content"][:1800] + ("…" if len(m["content"]) > 1800 else "")
+        lines.append(f"{m['speaker_name']} ({m['speaker_type']}): {excerpt}")
+    return "\n\n".join(lines)
 
 
 def _print_divider(label: str = "") -> None:
@@ -25,14 +33,17 @@ def _print_divider(label: str = "") -> None:
 
 def build_debate_graph(
     philosopher_agents: dict[str, PhilosopherAgent],
-    evaluator: EvaluatorAgent,
+    director: DirectorAgent,
     moderator: ModeratorAgent,
 ):
-    # ------------------------------------------------------------------ nodes
-
-    def node_moderator_introduce(state: DebateState) -> dict:
-        intro = moderator.introduce(state["topic"], state["philosopher_names"])
-        _print_divider("MODERATOR — Introduction")
+    def node_moderator_opening(state: DebateState) -> dict:
+        intro = moderator.opening_hub(
+            state["topic"],
+            state["philosopher_names"],
+            state["initial_proponent"],
+            state["moderator_intermission_every"],
+        )
+        _print_divider("MODERATOR — Opening")
         print(intro)
         return {
             "messages": [DebateMessage(
@@ -41,85 +52,155 @@ def build_debate_graph(
                 speaker_name="Moderator",
                 content=intro,
             )],
-            "phase": "philosopher_speak",
         }
 
     def node_philosopher_speak(state: DebateState) -> dict:
-        idx = state["current_philosopher_idx"]
-        name = state["philosopher_names"][idx]
-        turn = state["current_turn"]
-
+        name = state["active_philosopher"]
+        turn_idx = state["speech_sequence"]
         history = _format_history(state["messages"])
-        last_eval = state["evaluations"].get(name, "")
 
-        response = philosopher_agents[name].respond(state["topic"], history, last_eval)
-        _print_divider(f"{name}  —  Round {turn + 1}")
+        response = philosopher_agents[name].respond(
+            state["topic"],
+            history,
+            target_philosopher=state["target_philosopher"],
+            opponent_excerpt=state["rebuttal_target_excerpt"],
+            chaos_factor=state["chaos_factor"],
+        )
+        _print_divider(f"{name}  —  Battle turn {turn_idx + 1}")
         print(response)
 
         return {
             "messages": [DebateMessage(
-                turn=turn,
+                turn=turn_idx,
                 speaker_type="philosopher",
                 speaker_name=name,
                 content=response,
             )],
+            "last_philosopher_speaker": name,
+            "last_philosopher_content": response,
+            "speech_sequence": turn_idx + 1,
+            "chaos_factor": "",
         }
 
-    def node_evaluator(state: DebateState) -> dict:
-        idx = state["current_philosopher_idx"]
-        name = state["philosopher_names"][idx]
+    def node_moderator_intermission(state: DebateState) -> dict:
+        iv = state["moderator_intermission_every"]
+        seq = state["speech_sequence"]
+        transcript = _format_history(state["messages"])
+        if len(transcript) > 12000:
+            transcript = transcript[-12000:]
 
-        # Collect this philosopher's statements in chronological order
-        phil_msgs = [
-            m["content"]
-            for m in state["messages"]
-            if m["speaker_type"] == "philosopher" and m["speaker_name"] == name
-        ]
-        latest = phil_msgs[-1] if phil_msgs else ""
-        previous = phil_msgs[:-1]
-
-        evaluation = evaluator.evaluate(name, state["topic"], latest, previous)
-        print(f"\n  [Evaluator → {name}]\n  {evaluation}")
-
-        # Advance index; if all philosophers done, route to turn summary
-        next_idx = idx + 1
-        all_done = next_idx >= len(state["philosopher_names"])
+        body = moderator.intermission_checkpoint(
+            state["topic"],
+            state["philosopher_names"],
+            transcript,
+            speech_count=seq,
+            interval=iv,
+        )
+        header = f"— Moderator checkpoint (after {seq} philosopher speeches; every {iv}) —"
+        content = f"{header}\n\n{body}"
+        _print_divider(f"MODERATOR — Checkpoint (every {iv} speeches)")
+        print(content)
 
         return {
             "messages": [DebateMessage(
-                turn=state["current_turn"],
-                speaker_type="evaluator",
-                speaker_name=name,
-                content=evaluation,
-            )],
-            "evaluations": {**state["evaluations"], name: evaluation},
-            "current_philosopher_idx": 0 if all_done else next_idx,
-            "phase": "turn_summary" if all_done else "philosopher_speak",
-        }
-
-    def node_moderator_turn_summary(state: DebateState) -> dict:
-        turn = state["current_turn"]
-        turn_msgs = [
-            m for m in state["messages"]
-            if m["turn"] == turn and m["speaker_type"] != "moderator"
-        ]
-        summary = moderator.summarize_turn(state["topic"], turn + 1, turn_msgs)
-        _print_divider(f"MODERATOR — Round {turn + 1} Summary")
-        print(summary)
-
-        next_turn = turn + 1
-        is_last = next_turn >= state["max_turns"]
-
-        return {
-            "messages": [DebateMessage(
-                turn=turn,
+                turn=seq,
                 speaker_type="moderator",
                 speaker_name="Moderator",
-                content=summary,
+                content=content,
             )],
-            "current_turn": next_turn,
-            "phase": "conclude" if is_last else "philosopher_speak",
         }
+
+    def node_debate_director(state: DebateState) -> dict:
+        name = state["last_philosopher_speaker"]
+        speech_seq = state["speech_sequence"]
+        last_text = state["last_philosopher_content"]
+
+        if len(state["philosopher_names"]) < 2:
+            line = "Only one participant — routing disabled; ending debate."
+            _print_divider("DEBATE DIRECTOR")
+            print(line)
+            return {
+                "messages": [DebateMessage(
+                    turn=max(0, speech_seq - 1),
+                    speaker_type="director",
+                    speaker_name="Debate Director",
+                    content=line,
+                )],
+                "should_end_debate": True,
+            }
+
+        if speech_seq <= 1:
+            new_directed = state["directed_cycles_completed"]
+        else:
+            new_directed = state["directed_cycles_completed"] + 1
+
+        if new_directed >= state["max_turns"]:
+            line = (
+                f"Directed clash cap reached ({state['max_turns']} post-opening). "
+                f"Closing debate.\n{state['topic'][:80]}…"
+            )
+            _print_divider("DEBATE DIRECTOR — Cap stop")
+            print(line)
+            return {
+                "messages": [DebateMessage(
+                    turn=max(0, speech_seq - 1),
+                    speaker_type="director",
+                    speaker_name="Debate Director",
+                    content=line,
+                )],
+                "directed_cycles_completed": new_directed,
+                "should_end_debate": True,
+            }
+
+        decision = director.routing_decision(
+            state["topic"],
+            state["philosopher_names"],
+            name,
+            last_text,
+            _recent_exchange_text(state["messages"]),
+            list(state["debate_history"]),
+            new_directed,
+            state["max_turns"],
+        )
+
+        log_lines = [decision.bridge]
+        if decision.conclude_debate:
+            log_lines.append("→ Ending debate (director signals conclude).")
+        elif decision.next_speaker:
+            log_lines.append(f"→ Next speaker: {decision.next_speaker} (vs {name}).")
+        if decision.chaos_question:
+            log_lines.append(f"→ Chaos provocation for next speech: {decision.chaos_question}")
+        log_body = "\n".join(log_lines)
+
+        _print_divider("DEBATE DIRECTOR")
+        print(log_body)
+
+        out: dict = {
+            "messages": [DebateMessage(
+                turn=max(0, speech_seq - 1),
+                speaker_type="director",
+                speaker_name="Debate Director",
+                content=log_body,
+            )],
+            "directed_cycles_completed": new_directed,
+            "should_end_debate": bool(decision.conclude_debate),
+        }
+
+        if not decision.conclude_debate and decision.next_speaker:
+            excerpt = last_text[:4000] if last_text else ""
+            out["active_philosopher"] = decision.next_speaker
+            out["target_philosopher"] = name
+            out["rebuttal_target_excerpt"] = excerpt
+            chaos = (decision.chaos_question or "").strip()
+            if chaos:
+                out["chaos_factor"] = chaos
+                out["debate_history"] = [
+                    f"{decision.next_speaker} vs {name} (chaos: {chaos[:120]}{'…' if len(chaos) > 120 else ''})",
+                ]
+            else:
+                out["debate_history"] = [f"{decision.next_speaker} vs {name}"]
+
+        return out
 
     def node_moderator_conclude(state: DebateState) -> dict:
         conclusion = moderator.conclude(state["topic"], state["messages"])
@@ -129,7 +210,7 @@ def build_debate_graph(
 
         return {
             "messages": [DebateMessage(
-                turn=state["current_turn"],
+                turn=state["speech_sequence"],
                 speaker_type="moderator",
                 speaker_name="Moderator",
                 content=conclusion,
@@ -137,38 +218,44 @@ def build_debate_graph(
             "debate_complete": True,
         }
 
-    # --------------------------------------------------------------- routing
+    def route_after_director(state: DebateState) -> str:
+        if len(state["philosopher_names"]) < 2:
+            return "conclude"
+        if state["directed_cycles_completed"] >= state["max_turns"]:
+            return "conclude"
+        if state["should_end_debate"]:
+            return "conclude"
+        return "philosopher_speak"
 
-    def route_after_evaluator(state: DebateState) -> str:
-        return state["phase"]  # "philosopher_speak" or "turn_summary"
-
-    def route_after_turn_summary(state: DebateState) -> str:
-        return state["phase"]  # "philosopher_speak" or "conclude"
-
-    # ----------------------------------------------------------------- graph
+    def route_after_philosopher(state: DebateState) -> str:
+        every = state["moderator_intermission_every"]
+        seq = state["speech_sequence"]
+        if every > 0 and seq > 0 and seq % every == 0:
+            return "intermission"
+        return "director"
 
     g = StateGraph(DebateState)
 
-    g.add_node("moderator_introduce", node_moderator_introduce)
+    g.add_node("moderator_opening", node_moderator_opening)
     g.add_node("philosopher_speak", node_philosopher_speak)
-    g.add_node("evaluator", node_evaluator)
-    g.add_node("moderator_turn_summary", node_moderator_turn_summary)
+    g.add_node("moderator_intermission", node_moderator_intermission)
+    g.add_node("debate_director", node_debate_director)
     g.add_node("moderator_conclude", node_moderator_conclude)
 
-    g.add_edge(START, "moderator_introduce")
-    g.add_edge("moderator_introduce", "philosopher_speak")
-    g.add_edge("philosopher_speak", "evaluator")
+    g.add_edge(START, "moderator_opening")
+    g.add_edge("moderator_opening", "philosopher_speak")
     g.add_conditional_edges(
-        "evaluator",
-        route_after_evaluator,
+        "philosopher_speak",
+        route_after_philosopher,
         {
-            "philosopher_speak": "philosopher_speak",
-            "turn_summary": "moderator_turn_summary",
+            "intermission": "moderator_intermission",
+            "director": "debate_director",
         },
     )
+    g.add_edge("moderator_intermission", "debate_director")
     g.add_conditional_edges(
-        "moderator_turn_summary",
-        route_after_turn_summary,
+        "debate_director",
+        route_after_director,
         {
             "philosopher_speak": "philosopher_speak",
             "conclude": "moderator_conclude",

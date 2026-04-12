@@ -2,12 +2,13 @@
 Philosophy Debate Agent
 =======================
 Run a multi-turn philosophical debate between RAG-backed philosopher agents,
-an evaluator, and a moderator, all orchestrated via LangGraph.
+a debate director, and a moderator, all orchestrated via LangGraph.
 
 Usage:
     python main.py
     python main.py --topic "Is democracy the best form of government?" --turns 3
     python main.py --philosophers Plato Nietzsche --turns 2
+    python main.py --moderator-every 4
 """
 
 import argparse
@@ -17,10 +18,17 @@ from datetime import datetime
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from config import PHILOSOPHERS, DEBATE_MODEL, EMBEDDING_MODEL, DEFAULT_MAX_TURNS, DEFAULT_TOPIC
+from config import (
+    PHILOSOPHERS,
+    DEBATE_MODEL,
+    EMBEDDING_MODEL,
+    DEFAULT_MAX_TURNS,
+    DEFAULT_MODERATOR_INTERMISSION_EVERY,
+    DEFAULT_TOPIC,
+)
 from rag.retriever import setup_philosopher_rag
 from agents.philosopher import PhilosopherAgent
-from agents.evaluator import EvaluatorAgent
+from agents.director import DirectorAgent
 from agents.moderator import ModeratorAgent
 from graph.debate_graph import build_debate_graph
 from graph.state import DebateState
@@ -38,7 +46,19 @@ def parse_args():
         "--turns",
         type=int,
         default=DEFAULT_MAX_TURNS,
-        help="Number of debate rounds (default: 2).",
+        help=(
+            "Number of directed rebuttal cycles after the opening stand "
+            "(each: Debate Director routes → philosopher speaks). Default: 2."
+        ),
+    )
+    parser.add_argument(
+        "--moderator-every",
+        type=int,
+        default=DEFAULT_MODERATOR_INTERMISSION_EVERY,
+        metavar="N",
+        help=(
+            "Insert a moderator checkpoint every N philosopher speeches (0 = off). Default: %(default)s."
+        ),
     )
     parser.add_argument(
         "--philosophers",
@@ -70,19 +90,28 @@ def main():
 
     args = parse_args()
 
+    if args.moderator_every < 0:
+        raise ValueError("--moderator-every must be >= 0 (use 0 to disable checkpoints).")
+
     # Validate philosopher selection
     for name in args.philosophers:
         if name not in PHILOSOPHERS:
             raise ValueError(f"Unknown philosopher: {name}. Available: {list(PHILOSOPHERS.keys())}")
 
     selected = {name: PHILOSOPHERS[name] for name in args.philosophers}
+    names = list(selected.keys())
 
     print(f"\n{'#' * 60}")
     print("  PHILOSOPHICAL DEBATE")
     print(f"  Topic   : {args.topic}")
-    print(f"  Rounds  : {args.turns}")
+    print(f"  Directed cycles (post-opening): {args.turns}")
+    print(f"  Opening proponent (first in list): {names[0]}")
     print(f"  Agents  : {', '.join(selected.keys())}")
     print(f"  Model   : {DEBATE_MODEL}")
+    if args.moderator_every > 0:
+        print(f"  Moderator checkpoint: every {args.moderator_every} philosopher speeches")
+    else:
+        print("  Moderator checkpoint: off")
     print(f"{'#' * 60}\n")
 
     # ----------------------------------------------------------------- Setup RAG
@@ -112,22 +141,31 @@ def main():
         )
         for name, cfg in selected.items()
     }
-    evaluator = EvaluatorAgent(llm=llm, retrievers=retrievers)
+    director = DirectorAgent(llm=llm)
     moderator = ModeratorAgent(llm=llm)
 
     # ----------------------------------------------------------------- Graph
-    debate_graph = build_debate_graph(philosopher_agents, evaluator, moderator)
+    debate_graph = build_debate_graph(philosopher_agents, director, moderator)
 
-    # ------------------------------------------------------------ Initial state
+    # ------------------------------------------------------------ Initial state (hub-and-spoke)
+    proponent = names[0]
     initial_state = DebateState(
         topic=args.topic,
         max_turns=args.turns,
-        philosopher_names=list(selected.keys()),
-        current_turn=0,
-        current_philosopher_idx=0,
+        moderator_intermission_every=args.moderator_every,
+        philosopher_names=names,
+        initial_proponent=proponent,
+        active_philosopher=proponent,
+        target_philosopher="",
+        rebuttal_target_excerpt="",
+        last_philosopher_speaker="",
+        last_philosopher_content="",
+        speech_sequence=0,
+        directed_cycles_completed=0,
         messages=[],
-        evaluations={},
-        phase="introduce",
+        debate_history=[],
+        chaos_factor="",
+        should_end_debate=False,
         debate_complete=False,
     )
 
@@ -150,7 +188,11 @@ def main():
         f.write("=" * 60 + "\n")
         f.write(f"Topic      : {final_state['topic']}\n")
         f.write(f"Philosophers: {', '.join(final_state['philosopher_names'])}\n")
-        f.write(f"Rounds     : {args.turns}\n")
+        f.write(f"Directed cycles (post-opening): {args.turns}\n")
+        f.write(
+            f"Moderator checkpoint: every {args.moderator_every} philosopher speeches"
+            f"{' (off)' if args.moderator_every == 0 else ''}\n"
+        )
         f.write(f"Date       : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("=" * 60 + "\n\n")
 
@@ -169,11 +211,8 @@ def main():
                 f.write(f"[MODERATOR]\n{msg['content']}\n\n")
             elif msg["speaker_type"] == "philosopher":
                 f.write(f"[{msg['speaker_name'].upper()}]\n{msg['content']}\n\n")
-            elif msg["speaker_type"] == "evaluator":
-                f.write(f"  ↳ Evaluation of {msg['speaker_name']}:\n")
-                for line in msg["content"].splitlines():
-                    f.write(f"  {line}\n")
-                f.write("\n")
+            elif msg["speaker_type"] == "director":
+                f.write(f"[DEBATE DIRECTOR]\n{msg['content']}\n\n")
 
     print(f"Transcript saved to {txt_filename}")
 
@@ -185,9 +224,11 @@ def main():
                 {
                     "topic": final_state["topic"],
                     "philosophers": final_state["philosopher_names"],
+                    "initial_proponent": final_state["initial_proponent"],
                     "turns": args.turns,
+                    "moderator_intermission_every": args.moderator_every,
                     "messages": final_state["messages"],
-                    "evaluations": final_state["evaluations"],
+                    "debate_history": final_state["debate_history"],
                 },
                 f,
                 ensure_ascii=False,

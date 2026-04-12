@@ -4,29 +4,37 @@ import operator
 
 class DebateMessage(TypedDict):
     turn: int
-    speaker_type: str   # "moderator" | "philosopher" | "evaluator"
-    speaker_name: str   # e.g. "Plato", "Moderator", "Evaluator"
+    speaker_type: str   # "moderator" | "philosopher" | "director"
+    speaker_name: str   # e.g. "Plato", "Moderator", "Debate Director"
     content: str
 
 
 class DebateState(TypedDict):
-    # Debate setup (populated at invocation, read-only during debate)
+    """Hub debate: moderator opens/closes; Debate Director routes; philosophers clash."""
+
     topic: str
     max_turns: int
+    # Insert a moderator checkpoint after every N philosopher speeches (0 = disabled).
+    moderator_intermission_every: int
     philosopher_names: list[str]
+    initial_proponent: str
 
-    # Loop control (updated by nodes)
-    current_turn: int           # 0-indexed round number
-    current_philosopher_idx: int
+    # Next speaker + rebuttal target (set by Debate Director before each non-opening speech)
+    active_philosopher: str
+    target_philosopher: str
+    rebuttal_target_excerpt: str
 
-    # Append-only transcript
+    last_philosopher_speaker: str
+    last_philosopher_content: str
+
+    speech_sequence: int
+    directed_cycles_completed: int
+
     messages: Annotated[list[DebateMessage], operator.add]
 
-    # Latest evaluation per philosopher (overwritten each turn)
-    evaluations: dict[str, str]
+    debate_history: Annotated[list[str], operator.add]
 
-    # Routing signal set by nodes, read by conditional edges
-    phase: str  # "philosopher_speak" | "turn_summary" | "philosopher_speak" | "conclude"
+    chaos_factor: str
+    should_end_debate: bool
 
-    # Terminal flag
     debate_complete: bool

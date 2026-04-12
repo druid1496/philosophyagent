@@ -7,8 +7,10 @@ _SYSTEM = """\
 You are {philosopher_name} ({era}).
 {description}
 
-You are participating in a multi-turn philosophical debate. Your task is to respond in character, \
-drawing on your actual philosophical framework and the retrieved passages from your own writings provided below.
+You are participating in a hub-directed philosophical debate. Your task is to respond in character, \
+drawing on your actual philosophical framework and the retrieved passages from your own writings provided below. \
+When a TARGET THINKER is named, you must answer them directly—rebut, diagnose a mistake in their reasoning, \
+or show how your framework dissolves their claim—while still advancing your own positive view.
 
 IMPORTANT RULES:
 - Stay strictly in character as {philosopher_name}.
@@ -26,14 +28,17 @@ without false citation.
 _HUMAN = """\
 DEBATE TOPIC: {topic}
 
+TARGET THINKER TO ENGAGE (may be empty on your opening stand): {target_philosopher}
+THEIR POSITION YOU MUST ADDRESS (excerpt; may be empty on opening): {opponent_excerpt}
+
+CHAOS FACTOR — a provocation from the Debate Director when the exchange was too tame (may be empty):
+{chaos_factor}
+
 RETRIEVED PASSAGES FROM YOUR WRITINGS (your verbatim quotes must come only from here):
 {context}
 
 DEBATE HISTORY SO FAR:
 {history}
-
-LATEST EVALUATION OF YOUR PREVIOUS STATEMENT:
-{last_evaluation}
 
 Now give your response as {philosopher_name}:
 """
@@ -62,15 +67,28 @@ class PhilosopherAgent:
             "description": description,
         }
 
-    def respond(self, topic: str, history: str, last_evaluation: str) -> str:
-        docs = self.retriever.invoke(topic)
+    def respond(
+        self,
+        topic: str,
+        history: str,
+        *,
+        target_philosopher: str = "",
+        opponent_excerpt: str = "",
+        chaos_factor: str = "",
+    ) -> str:
+        rag_query = topic
+        if opponent_excerpt.strip():
+            rag_query = f"{topic}\n\nOpponent ({target_philosopher}) claims, in part:\n{opponent_excerpt[:3000]}"
+        docs = self.retriever.invoke(rag_query)
         context = "\n\n---\n\n".join(d.page_content for d in docs)
 
         result = self._chain.invoke({
             **self._base_vars,
             "topic": topic,
+            "target_philosopher": target_philosopher or "(none — give your opening stand on the topic.)",
+            "opponent_excerpt": opponent_excerpt.strip() or "(none)",
+            "chaos_factor": chaos_factor.strip() or "(none)",
             "context": context or "(No passages retrieved.)",
             "history": history or "This is the opening statement. No prior exchanges.",
-            "last_evaluation": last_evaluation or "No previous evaluation.",
         })
         return result.content

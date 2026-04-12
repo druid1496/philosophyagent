@@ -2,27 +2,40 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
 
-_INTRO_PROMPT = """\
-You are a moderator facilitating a rigorous philosophical debate.
+_OPENING_HUB_PROMPT = """\
+You are the moderator opening a live philosophical debate on a contemporary topic.
 
 TOPIC: "{topic}"
-PARTICIPATING PHILOSOPHERS: {philosophers}
+PARTICIPANTS: {philosophers}
 
-Introduce the debate. In 120–150 words:
-1. Frame the philosophical significance of the topic.
-2. Note briefly why each philosopher's perspective will be distinctive and valuable.
-3. Pose one precise opening question to guide the first round.
+INITIAL PROPONENT (must take the first stand): {initial_proponent}
+
+In 130–170 words:
+1. Name the topic sharply as a modern moral or political question.
+2. Explain that a **Debate Director** (not you) will read each speech and decide who answers next—or when the \
+melee should end—based on friction and pacing, not on scoring who is "right."
+3. Address {initial_proponent} by name and demand a clear opening stand: thesis, one key reason, and what would count as refuting them.
+4. {intermission_policy}
+Do NOT invite everyone to speak in turn.
 """
 
-_TURN_SUMMARY_PROMPT = """\
-You are moderating a philosophical debate on: "{topic}"
+_INTERMISSION_PROMPT = """\
+You are the moderator at a CHECKPOINT in a philosophical debate.
 
-ROUND {turn_number} — STATEMENTS AND EVALUATIONS:
-{turn_content}
+TOPIC: "{topic}"
+PARTICIPANTS: {philosophers}
 
-In 100–120 words:
-1. Summarize the key positions and the most interesting tension or disagreement that emerged.
-2. Pose one focused follow-up question to sharpen the next round.
+This checkpoint fires after **{speech_count}** philosopher speeches (you appear every **{interval}** speeches).
+
+DEBATE SO FAR (moderator, philosophers, director; most recent last):
+\"\"\"
+{transcript}
+\"\"\"
+
+In 130–170 words:
+1. Synthesize the main positions and clashes since the last checkpoint (or since opening if this is the first).
+2. Name the sharpest unresolved tension.
+3. Offer one refocusing question for the room. Do **not** assign who speaks next—the Debate Director routes speakers.
 """
 
 _CONCLUSION_PROMPT = """\
@@ -39,33 +52,52 @@ Write a conclusion (200–250 words):
 """
 
 
+def _intermission_policy_text(interval: int) -> str:
+    if interval <= 0:
+        return (
+            "Apart from this opening and the final synthesis, you will **not** step in mid-debate; "
+            "the Debate Director alone routes speakers until the close."
+        )
+    return (
+        f"Apart from opening and the final synthesis, you will step in every **{interval}** philosopher speeches "
+        f"for a brief checkpoint—synthesis and a refocusing question—then the Debate Director resumes."
+    )
+
+
 class ModeratorAgent:
     def __init__(self, llm: ChatOpenAI):
         self._llm = llm
 
-    def introduce(self, topic: str, philosopher_names: list[str]) -> str:
-        chain = ChatPromptTemplate.from_messages([("human", _INTRO_PROMPT)]) | self._llm
+    def opening_hub(
+        self,
+        topic: str,
+        philosopher_names: list[str],
+        initial_proponent: str,
+        moderator_intermission_every: int,
+    ) -> str:
+        chain = ChatPromptTemplate.from_messages([("human", _OPENING_HUB_PROMPT)]) | self._llm
         return chain.invoke({
             "topic": topic,
             "philosophers": ", ".join(philosopher_names),
+            "initial_proponent": initial_proponent,
+            "intermission_policy": _intermission_policy_text(moderator_intermission_every),
         }).content
 
-    def summarize_turn(
-        self, topic: str, turn_number: int, turn_messages: list[dict]
+    def intermission_checkpoint(
+        self,
+        topic: str,
+        philosopher_names: list[str],
+        transcript: str,
+        speech_count: int,
+        interval: int,
     ) -> str:
-        lines = []
-        for msg in turn_messages:
-            if msg["speaker_type"] == "philosopher":
-                lines.append(f"\n{msg['speaker_name']}:\n{msg['content']}")
-            elif msg["speaker_type"] == "evaluator":
-                lines.append(f"[Evaluation of {msg['speaker_name']}]:\n{msg['content']}")
-        turn_content = "\n".join(lines)
-
-        chain = ChatPromptTemplate.from_messages([("human", _TURN_SUMMARY_PROMPT)]) | self._llm
+        chain = ChatPromptTemplate.from_messages([("human", _INTERMISSION_PROMPT)]) | self._llm
         return chain.invoke({
             "topic": topic,
-            "turn_number": turn_number,
-            "turn_content": turn_content,
+            "philosophers": ", ".join(philosopher_names),
+            "transcript": transcript,
+            "speech_count": speech_count,
+            "interval": interval,
         }).content
 
     def conclude(self, topic: str, all_messages: list[dict]) -> str:
@@ -74,9 +106,9 @@ class ModeratorAgent:
             if msg["speaker_type"] == "moderator":
                 parts.append(f"[Moderator]: {msg['content']}")
             elif msg["speaker_type"] == "philosopher":
-                parts.append(f"{msg['speaker_name']} (Round {msg['turn'] + 1}): {msg['content']}")
-            elif msg["speaker_type"] == "evaluator":
-                parts.append(f"  → Eval of {msg['speaker_name']}: {msg['content']}")
+                parts.append(f"{msg['speaker_name']} (turn {msg['turn'] + 1}): {msg['content']}")
+            elif msg["speaker_type"] == "director":
+                parts.append(f"[Debate Director]: {msg['content']}")
         transcript = "\n\n".join(parts)
 
         chain = ChatPromptTemplate.from_messages([("human", _CONCLUSION_PROMPT)]) | self._llm

@@ -10,30 +10,25 @@ A multi-agent system where philosopher AIs debate contemporary topics — ground
 
 1. **Philosopher Agents** — each philosopher (Plato, Kant, Nietzsche) is built from RAG over their own philosophical texts + a system prompt that keeps them in character. Every response is anchored to retrieved passages from their writings.
 
-2. **Evaluator Agent** — after each philosopher speaks, the evaluator scores the response on:
-   - *Textual Grounding*: does it reflect the philosopher's actual documented positions?
-   - *Internal Consistency*: does it contradict earlier statements in this debate?
-   - *Argumentative Rigor*: how philosophically sound is the reasoning?
+2. **Debate Director** — after each philosopher speaks, decides who answers next (or when to stop), based on friction and pacing; may inject a short “chaos” provocation if the exchange is too tame.
 
-3. **Moderator Agent** — controls the full debate lifecycle: introduces the topic, summarizes each round and poses follow-up questions, and writes a final synthesis conclusion.
+3. **Moderator Agent** — opens the debate (frames the topic, names the opening proponent), optionally **checkpoints** every *N* philosopher speeches (default 4, configurable via `--moderator-every`, `0` = off), and delivers the final synthesis conclusion.
 
-4. **LangGraph** — orchestrates the multi-turn loop. Each round, all philosophers speak in sequence, each followed by an evaluation. The moderator summarizes after every full round. Runs for N configurable turns.
+4. **LangGraph** — hub-style flow: opening → philosopher ↔ (optional moderator checkpoint every *N* speeches) ↔ Debate Director routing → … until cap or director ends → moderator conclusion.
 
 ### Debate Flow
 
 ```
 START
-  └─> Moderator: introduce topic
-        └─> Philosopher 1 speaks
-              └─> Evaluator assesses
-                    └─> Philosopher 2 speaks
-                          └─> Evaluator assesses
-                                └─> Philosopher 3 speaks
-                                      └─> Evaluator assesses
-                                            └─> Moderator: summarize round + follow-up question
-                                                  └─> [repeat for N rounds]
-                                                        └─> Moderator: conclusion
-                                                              └─> END
+  └─> Moderator: opening
+        └─> Opening philosopher: first stand
+              └─> [every N philosopher speeches → Moderator: checkpoint]
+                    └─> Debate Director: who speaks next (or end)
+                          └─> Next philosopher: rebuttal / advance
+                                └─> …
+                                      └─> [until cap or director concludes]
+                                            └─> Moderator: conclusion
+                                                  └─> END
 ```
 
 ---
@@ -54,8 +49,8 @@ philosophyagent/
 │   └── retriever.py         # FAISS vector store per philosopher
 ├── agents/
 │   ├── philosopher.py       # PhilosopherAgent: RAG retrieval + in-character LLM response
-│   ├── evaluator.py         # EvaluatorAgent: grounding + consistency scoring
-│   └── moderator.py         # ModeratorAgent: intro / turn summary / conclusion
+│   ├── director.py          # DirectorAgent: Debate Director — routing + optional chaos
+│   └── moderator.py         # ModeratorAgent: opening hub + conclusion
 └── graph/
     ├── state.py             # DebateState TypedDict (LangGraph state schema)
     └── debate_graph.py      # LangGraph nodes + conditional edges
