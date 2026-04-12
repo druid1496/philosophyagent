@@ -52,6 +52,11 @@ def parse_args():
         action="store_true",
         help="Also save the full transcript as a JSON file.",
     )
+    parser.add_argument(
+        "--rebuild-index",
+        action="store_true",
+        help="Ignore cached FAISS indexes and rebuild from source texts.",
+    )
     return parser.parse_args()
 
 
@@ -81,11 +86,17 @@ def main():
     print(f"{'#' * 60}\n")
 
     # ----------------------------------------------------------------- Setup RAG
-    print("Loading philosopher texts and building vector stores...")
+    print("Loading or building persistent vector stores (vector_stores/<philosopher>/)...")
     retrievers = {}
     for name, cfg in selected.items():
-        print(f"  [{name}] indexing {cfg['text_file']}")
-        retrievers[name] = setup_philosopher_rag(name, cfg["text_file"], EMBEDDING_MODEL)
+        action = "rebuilding" if args.rebuild_index else "loading / indexing"
+        print(f"  [{name}] {action} {cfg['text_file']}")
+        retrievers[name] = setup_philosopher_rag(
+            name,
+            cfg["text_file"],
+            EMBEDDING_MODEL,
+            force_rebuild=args.rebuild_index,
+        )
     print("Done.\n")
 
     # ---------------------------------------------------------------- Agents
