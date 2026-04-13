@@ -24,6 +24,14 @@ def _recent_exchange_text(messages: list[DebateMessage], limit: int = 10) -> str
     return "\n\n".join(lines)
 
 
+def _recent_philosopher_order(messages: list[DebateMessage], limit: int = 12) -> list[str]:
+    names: list[str] = []
+    for m in messages:
+        if m["speaker_type"] == "philosopher":
+            names.append(m["speaker_name"])
+    return names[-limit:]
+
+
 def _print_divider(label: str = "") -> None:
     print(f"\n{'=' * 60}")
     if label:
@@ -66,7 +74,7 @@ def build_debate_graph(
             opponent_excerpt=state["rebuttal_target_excerpt"],
             chaos_factor=state["chaos_factor"],
         )
-        _print_divider(f"{name}  —  Battle turn {turn_idx + 1}")
+        _print_divider(f"{name}  —  Debate turn {turn_idx + 1}")
         print(response)
 
         return {
@@ -129,14 +137,11 @@ def build_debate_graph(
                 "should_end_debate": True,
             }
 
-        if speech_seq <= 1:
-            new_directed = state["directed_cycles_completed"]
-        else:
-            new_directed = state["directed_cycles_completed"] + 1
+        new_directed = state["directed_cycles_completed"] + 1
 
         if new_directed >= state["max_turns"]:
             line = (
-                f"Directed clash cap reached ({state['max_turns']} post-opening). "
+                f"Philosopher speech cap reached ({state['max_turns']} total, including opening stand). "
                 f"Closing debate.\n{state['topic'][:80]}…"
             )
             _print_divider("DEBATE DIRECTOR — Cap stop")
@@ -159,6 +164,7 @@ def build_debate_graph(
             last_text,
             _recent_exchange_text(state["messages"]),
             list(state["debate_history"]),
+            _recent_philosopher_order(state["messages"]),
             new_directed,
             state["max_turns"],
         )

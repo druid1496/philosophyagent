@@ -1,7 +1,5 @@
 # Philosophy Debate Agent
 
-让不同的哲学家 agent 在当代新闻/哲学议题上辩论。
-
 A multi-agent system where philosopher AIs debate contemporary topics — grounded in their actual texts via RAG, orchestrated by LangGraph.
 
 ---
@@ -76,24 +74,19 @@ cp .env.example .env
 ### 3. Run
 
 ```bash
-# Default: Plato vs Kant vs Nietzsche, 2 rounds, AI topic
-python3 main.py
+# Print out help messages
+python3 main.py -h
 
 # Custom topic and number of rounds
-python3 main.py --topic "Is democracy the best form of government?" --turns 3
+python3 main.py --topic "Is democracy the best form of government?" --turns 10
 
 # Select specific philosophers and save transcript
-python3 main.py --philosophers Plato Nietzsche --turns 2 --save
+python3 main.py --philosophers Plato Nietzsche --turns 4 --save
+
+# Export the compiled LangGraph as PNG
+python3 main.py --export-graph
+python3 main.py --export-graph debate_graph.png
 ```
-
-### CLI Options
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--topic` | The debate topic | AI and human flourishing |
-| `--turns` | Number of debate rounds | 2 |
-| `--philosophers` | Which philosophers to include | Plato Kant Nietzsche |
-| `--save` | Save full transcript to JSON | off |
 
 ---
 

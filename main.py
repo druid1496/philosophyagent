@@ -22,6 +22,8 @@ from config import (
     PHILOSOPHERS,
     DEBATE_MODEL,
     EMBEDDING_MODEL,
+    AGENT_TEMPERATURE,
+    DIRECTOR_TEMPERATURE,
     DEFAULT_MAX_TURNS,
     DEFAULT_MODERATOR_INTERMISSION_EVERY,
     DEFAULT_TOPIC,
@@ -47,8 +49,9 @@ def parse_args():
         type=int,
         default=DEFAULT_MAX_TURNS,
         help=(
-            "Number of directed rebuttal cycles after the opening stand "
-            "(each: Debate Director routes → philosopher speaks). Default: 2."
+            "Maximum philosopher speeches in the debate, including the opening stand "
+            "(each speech is followed by the Debate Director unless the cap is reached). "
+            "Default: %(default)s."
         ),
     )
     parser.add_argument(
@@ -77,6 +80,17 @@ def parse_args():
         action="store_true",
         help="Ignore cached FAISS indexes and rebuild from source texts.",
     )
+    parser.add_argument(
+        "--export-graph",
+        nargs="?",
+        const="debate_graph.png",
+        default=None,
+        metavar="PNG_PATH",
+        help=(
+            "Export the compiled LangGraph diagram as a PNG. "
+            "If path is omitted, uses debate_graph.png."
+        ),
+    )
     return parser.parse_args()
 
 
@@ -104,7 +118,7 @@ def main():
     print(f"\n{'#' * 60}")
     print("  PHILOSOPHICAL DEBATE")
     print(f"  Topic   : {args.topic}")
-    print(f"  Directed cycles (post-opening): {args.turns}")
+    print(f"  Max philosopher speeches (incl. opening): {args.turns}")
     print(f"  Opening proponent (first in list): {names[0]}")
     print(f"  Agents  : {', '.join(selected.keys())}")
     print(f"  Model   : {DEBATE_MODEL}")
@@ -129,7 +143,8 @@ def main():
     print("Done.\n")
 
     # ---------------------------------------------------------------- Agents
-    llm = ChatOpenAI(model=DEBATE_MODEL, temperature=0.7)
+    llm = ChatOpenAI(model=DEBATE_MODEL, temperature=AGENT_TEMPERATURE)
+    director_llm = ChatOpenAI(model=DEBATE_MODEL, temperature=DIRECTOR_TEMPERATURE)
 
     philosopher_agents = {
         name: PhilosopherAgent(
@@ -141,11 +156,20 @@ def main():
         )
         for name, cfg in selected.items()
     }
-    director = DirectorAgent(llm=llm)
+    director = DirectorAgent(llm=director_llm)
     moderator = ModeratorAgent(llm=llm)
 
     # ----------------------------------------------------------------- Graph
     debate_graph = build_debate_graph(philosopher_agents, director, moderator)
+
+    if args.export_graph:
+        try:
+            png_bytes = debate_graph.get_graph().draw_mermaid_png()
+            with open(args.export_graph, "wb") as f:
+                f.write(png_bytes)
+            print(f"Graph PNG exported to {args.export_graph}")
+        except Exception as e:
+            print(f"Warning: could not export graph PNG ({e})")
 
     # ------------------------------------------------------------ Initial state (hub-and-spoke)
     proponent = names[0]
@@ -188,7 +212,7 @@ def main():
         f.write("=" * 60 + "\n")
         f.write(f"Topic      : {final_state['topic']}\n")
         f.write(f"Philosophers: {', '.join(final_state['philosopher_names'])}\n")
-        f.write(f"Directed cycles (post-opening): {args.turns}\n")
+        f.write(f"Max philosopher speeches (incl. opening): {args.turns}\n")
         f.write(
             f"Moderator checkpoint: every {args.moderator_every} philosopher speeches"
             f"{' (off)' if args.moderator_every == 0 else ''}\n"

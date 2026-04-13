@@ -35,7 +35,7 @@ DEBATE SO FAR (moderator, philosophers, director; most recent last):
 In 130–170 words:
 1. Synthesize the main positions and clashes since the last checkpoint (or since opening if this is the first).
 2. Name the sharpest unresolved tension.
-3. Offer one refocusing question for the room. Do **not** assign who speaks next—the Debate Director routes speakers.
+Do **not** assign who speaks next—the Debate Director routes speakers.
 """
 
 _CONCLUSION_PROMPT = """\
@@ -60,7 +60,7 @@ def _intermission_policy_text(interval: int) -> str:
         )
     return (
         f"Apart from opening and the final synthesis, you will step in every **{interval}** philosopher speeches "
-        f"for a brief checkpoint—synthesis and a refocusing question—then the Debate Director resumes."
+        f"for a brief checkpoint—synthesis only—then the Debate Director resumes."
     )
 
 

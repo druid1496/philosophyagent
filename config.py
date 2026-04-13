@@ -1,6 +1,11 @@
 DEBATE_MODEL = "gpt-4o-mini"
 EMBEDDING_MODEL = "text-embedding-3-small"
-DEFAULT_MAX_TURNS = 8
+
+# ChatOpenAI sampling: philosophers and moderator share one temperature; director uses a lower one for steadier routing JSON.
+AGENT_TEMPERATURE = 0.7
+DIRECTOR_TEMPERATURE = 0.45
+
+DEFAULT_MAX_TURNS = 10
 DEFAULT_MODERATOR_INTERMISSION_EVERY = 4
 DEFAULT_TOPIC = "Is artificial intelligence a threat to human flourishing and dignity?"
 

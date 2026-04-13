@@ -13,7 +13,7 @@ class DebateState(TypedDict):
     """Hub debate: moderator opens/closes; Debate Director routes; philosophers clash."""
 
     topic: str
-    max_turns: int
+    max_turns: int  # Max philosopher speeches, including the opening stand.
     # Insert a moderator checkpoint after every N philosopher speeches (0 = disabled).
     moderator_intermission_every: int
     philosopher_names: list[str]
@@ -28,6 +28,7 @@ class DebateState(TypedDict):
     last_philosopher_content: str
 
     speech_sequence: int
+    # Count of philosopher speeches completed toward max_turns (increments each director step; includes opening).
     directed_cycles_completed: int
 
     messages: Annotated[list[DebateMessage], operator.add]

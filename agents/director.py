@@ -13,6 +13,9 @@ and when to stop.
 TOPIC: "{topic}"
 PARTICIPANTS (exact names, use these strings verbatim): {philosophers}
 
+RECENT SPEAKING ORDER (philosopher speeches only, oldest → newest; may repeat names):
+{recent_philosopher_order}
+
 LAST SPEAKER: {last_speaker}
 THEIR LATEST STATEMENT (excerpt):
 \"\"\"
@@ -27,11 +30,20 @@ RECENT TRANSCRIPT (most recent last):
 {recent_exchange}
 \"\"\"
 
-DIRECTED CLASHES SO FAR (after opening): {directed_cycles} / {max_turns} allowed before the system forces a stop.
+PHILOSOPHER SPEECHES COMPLETED SO FAR (includes opening stand): {directed_cycles} / {max_turns} before the system forces a stop.
+
+Routing policy (critical):
+- Choose **next_speaker** for **substance**, not fairness. Pick whoever should answer the last claim: best critic, \
+clearest opponent, or the one whose framework was left unaddressed.
+- **Do not** route by rotating through PARTICIPANTS in list order, and do not default to “everyone gets a turn.” \
+If the same pairing is still productive, keep pressing it; if a voice has gone quiet too long, pull them back in.
+- If RECENT SPEAKING ORDER shows one person dominating, prefer someone else **unless** the text clearly needs that \
+person again.
+- In **bridge**, briefly say *why this thinker* in one clause (e.g. tension with last claim, ignored thesis).
 
 Your duties (one JSON object only, no markdown fences):
-1. **conclude_debate** (boolean): true if this clash should end now—e.g. repetition, exhaustion of useful antagonists, \
-natural closure, or the cap above is already reached / would add nothing. Base this on dialogue shape and pacing only.
+1. **conclude_debate** (boolean): true if this clash should end now—repetition, no new friction, natural closure, \
+or the cap above is already reached / would add nothing. Base on dialogue shape and pacing only.
 2. **next_speaker** (string or null): if conclude_debate is false, the ONE participant who must speak next—must be \
 different from LAST SPEAKER and must be an exact name from PARTICIPANTS. If conclude_debate is true, use null.
 3. **bridge** (string): one or two sentences read aloud to the room—why this speaker goes next, OR why the debate stops.
@@ -51,10 +63,23 @@ class RoutingDecision:
     chaos_question: str | None
 
 
+def _fallback_next(
+    philosopher_names: list[str],
+    last_speaker: str,
+    directed_cycles: int,
+) -> str | None:
+    """When JSON is bad or next_speaker is invalid, avoid always picking the first name in list order."""
+    others = [n for n in philosopher_names if n != last_speaker]
+    if not others:
+        return None
+    return others[directed_cycles % len(others)]
+
+
 def _parse_routing_json(
     text: str,
     philosopher_names: list[str],
     last_speaker: str,
+    directed_cycles: int,
 ) -> RoutingDecision:
     raw = text.strip()
     m = re.search(r"\{[\s\S]*\}", raw)
@@ -78,12 +103,12 @@ def _parse_routing_json(
     if isinstance(chaos, str) and (not chaos or chaos.upper() == "NONE"):
         chaos = None
 
-    others = [n for n in philosopher_names if n != last_speaker]
+    fb = _fallback_next(philosopher_names, last_speaker, directed_cycles)
     if not conclude and nxt is not None:
         if nxt not in philosopher_names or nxt == last_speaker:
-            nxt = others[0] if others else None
-    if not conclude and nxt is None and others:
-        nxt = others[0]
+            nxt = fb
+    if not conclude and nxt is None and fb is not None:
+        nxt = fb
 
     return RoutingDecision(
         conclude_debate=conclude,
@@ -109,14 +134,21 @@ class DirectorAgent:
         last_statement: str,
         recent_exchange: str,
         debate_history: list[str],
+        recent_philosopher_order: list[str],
         directed_cycles_completed: int,
         max_turns: int,
     ) -> RoutingDecision:
         excerpt = last_statement[:6000] if last_statement else "(empty)"
         hist = "\n".join(debate_history[-12:]) if debate_history else "(none yet)"
+        order_txt = (
+            " → ".join(recent_philosopher_order)
+            if recent_philosopher_order
+            else "(none yet)"
+        )
         text = self._chain.invoke({
             "topic": topic,
             "philosophers": ", ".join(philosopher_names),
+            "recent_philosopher_order": order_txt,
             "last_speaker": last_speaker,
             "last_statement_excerpt": excerpt,
             "debate_history": hist,
@@ -125,10 +157,13 @@ class DirectorAgent:
             "max_turns": max_turns,
         }).content
         try:
-            return _parse_routing_json(text, philosopher_names, last_speaker)
+            return _parse_routing_json(
+                text, philosopher_names, last_speaker, directed_cycles_completed,
+            )
         except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-            others = [n for n in philosopher_names if n != last_speaker]
-            nxt = others[0] if others else None
+            nxt = _fallback_next(
+                philosopher_names, last_speaker, directed_cycles_completed,
+            )
             return RoutingDecision(
                 conclude_debate=False,
                 next_speaker=nxt,
