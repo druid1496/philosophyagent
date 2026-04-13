@@ -7,8 +7,8 @@ from langchain_core.prompts import ChatPromptTemplate
 
 
 _ROUTING_PROMPT = """\
-You are the **Debate Director** for a philosophical debate. You only control who speaks next, optional provocation, \
-and when to stop—you do **not** score arguments or judge philosophical quality.
+You are the **Debate Director** for a philosophical debate. You control who speaks next, optional provocation, \
+and when to stop.
 
 TOPIC: "{topic}"
 PARTICIPANTS (exact names, use these strings verbatim): {philosophers}
