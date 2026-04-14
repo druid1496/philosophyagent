@@ -4,6 +4,19 @@ A multi-agent system where philosopher AIs debate contemporary topics — ground
 
 ---
 
+## Demo
+
+<p align="center">
+  <video
+    src="./demo.mp4"
+    controls
+    muted
+    playsinline
+    width="900"
+    style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);"
+  ></video>
+</p>
+
 ## How It Works
 
 1. **Philosopher Agents** — each philosopher (Plato, Kant, Nietzsche) is built from RAG over their own philosophical texts + a system prompt that keeps them in character. Every response is anchored to retrieved passages from their writings.
