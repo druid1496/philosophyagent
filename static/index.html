@@ -167,16 +167,20 @@
       box-shadow: 0 0 0 3px var(--gold-dim);
     }
 
-    /* Philosopher Grid */
+    /*
+     * Roster-sized grid: as many cards per row as fit (from min track width + gaps).
+     * Small roster + wide card → one row; more philosophers or narrow width → extra rows.
+     */
     .phil-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 112px), 1fr));
+      gap: clamp(8px, 1.8vw, 12px);
       margin-top: 4px;
     }
 
     .phil-card {
       position: relative;
+      min-width: 0;
       background: var(--bg);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -196,6 +200,8 @@
     }
 
     .phil-card .avatar {
+      position: relative;
+      overflow: hidden;
       width: 52px; height: 52px;
       border-radius: 50%;
       background: color-mix(in srgb, var(--color, #888) 20%, var(--bg));
@@ -208,6 +214,27 @@
       color: var(--color, #888);
       transition: all 0.25s;
     }
+
+    .phil-card .avatar .avatar-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+    }
+
+    .phil-card .avatar .avatar-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .phil-card .avatar .avatar-img.broken { display: none; }
 
     .phil-card.selected .avatar {
       background: color-mix(in srgb, var(--color, #888) 25%, var(--bg));
@@ -510,6 +537,8 @@
     }
 
     .stage-philosopher .stage-avatar {
+      position: relative;
+      overflow: hidden;
       width: 52px; height: 52px;
       border-radius: 50%;
       background: color-mix(in srgb, var(--color, #888) 15%, var(--bg));
@@ -521,6 +550,27 @@
       color: var(--color, #888);
       transition: all 0.35s ease;
     }
+
+    .stage-philosopher .stage-avatar .avatar-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+    }
+
+    .stage-philosopher .stage-avatar .avatar-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .stage-philosopher .stage-avatar .avatar-img.broken { display: none; }
 
     .stage-philosopher .stage-name {
       font-family: 'Cinzel', serif;
@@ -592,6 +642,11 @@
     .message-card.visible {
       opacity: 1;
       transform: translateY(0);
+    }
+
+    /* Preserve model newlines / paragraph breaks (CLI prints these; HTML collapses them by default). */
+    .message-card .message-content {
+      white-space: pre-wrap;
     }
 
     /* ── Moderator ── */
@@ -674,6 +729,8 @@
     }
 
     .philosopher-header .msg-avatar {
+      position: relative;
+      overflow: hidden;
       width: 44px; height: 44px;
       border-radius: 50%;
       background: color-mix(in srgb, var(--color, #888) 20%, var(--bg));
@@ -685,6 +742,27 @@
       color: var(--color, #888);
       flex-shrink: 0;
     }
+
+    .philosopher-header .msg-avatar .avatar-fallback {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 0;
+    }
+
+    .philosopher-header .msg-avatar .avatar-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      z-index: 1;
+    }
+
+    .philosopher-header .msg-avatar .avatar-img.broken { display: none; }
 
     .philosopher-header .speaker-info { flex: 1; }
 
@@ -870,6 +948,17 @@
       .arena-body { padding: 20px 16px 80px; }
       .debate-header { padding: 12px 16px; }
       .philosopher-stage { padding: 14px 16px; }
+      .phil-grid { gap: 6px; }
+      .phil-card { padding: 12px 6px; }
+      .phil-card .avatar {
+        width: 44px;
+        height: 44px;
+        font-size: 1.05rem;
+        margin-bottom: 8px;
+      }
+      .phil-card .phil-name { font-size: 0.65rem; letter-spacing: 0.03em; }
+      .phil-card .phil-era { font-size: 0.58rem; }
+      .phil-card .check { top: 6px; right: 6px; width: 16px; height: 16px; font-size: 0.6rem; }
     }
   </style>
 </head>
@@ -1009,6 +1098,20 @@ const PHIL_INITIALS = {
   Machiavelli: 'Mc',
 };
 
+function escapeAttr(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+/** Renders initials, or photo with initials behind for onerror fallback. */
+function avatarFaceHtml(avatarUrl, initials) {
+  if (!avatarUrl) return initials;
+  const u = escapeAttr(avatarUrl);
+  return `<span class="avatar-fallback">${initials}</span><img class="avatar-img" src="${u}" alt="" decoding="async" loading="lazy" onerror="this.classList.add('broken');">`;
+}
+
 const SAMPLE_TOPICS = [
   'Is artificial intelligence a threat to human flourishing and dignity?',
   'Can democracy survive in the age of social media?',
@@ -1075,6 +1178,7 @@ function renderPhilGrid(phils) {
   for (const p of phils) {
     const color = PHIL_COLORS[p.name] || '#888';
     const initials = PHIL_INITIALS[p.name] || p.name[0];
+    const avatarUrl = p.avatar_url || null;
     const card = document.createElement('div');
     card.className = 'phil-card selected';
     card.dataset.name = p.name;
@@ -1082,7 +1186,7 @@ function renderPhilGrid(phils) {
     card.title = p.description || '';
     card.innerHTML = `
       <div class="check">✓</div>
-      <div class="avatar">${initials}</div>
+      <div class="avatar">${avatarFaceHtml(avatarUrl, initials)}</div>
       <div class="phil-name">${p.name}</div>
       <div class="phil-era">${p.era}</div>
     `;
@@ -1300,9 +1404,10 @@ function buildMessageEl(msg) {
     el.className = 'message-card philosopher';
     el.style.setProperty('--color', color);
     const era = philosopherData[msg.speaker_name]?.era || '';
+    const avatarUrl = philosopherData[msg.speaker_name]?.avatar_url || null;
     el.innerHTML = `
       <div class="philosopher-header">
-        <div class="msg-avatar" style="color:${color};border-color:${color}40;background:${color}18">${initials}</div>
+        <div class="msg-avatar" style="color:${color};border-color:${color}40;background:${color}18">${avatarFaceHtml(avatarUrl, initials)}</div>
         <div class="speaker-info">
           <div class="speaker-name" style="color:${color}">${msg.speaker_name}</div>
           <div class="speaker-era">${era}</div>
@@ -1358,12 +1463,13 @@ function showDebateScreen(topic, philosophers) {
   for (const name of philosophers) {
     const color = PHIL_COLORS[name] || '#888';
     const initials = PHIL_INITIALS[name] || name[0];
+    const avatarUrl = philosopherData[name]?.avatar_url || null;
     const div = document.createElement('div');
     div.className = 'stage-philosopher';
     div.id = `stage-${name}`;
     div.style.setProperty('--color', color);
     div.innerHTML = `
-      <div class="stage-avatar">${initials}</div>
+      <div class="stage-avatar">${avatarFaceHtml(avatarUrl, initials)}</div>
       <div class="stage-name">${name}</div>
     `;
     stage.appendChild(div);

@@ -1,4 +1,5 @@
 debate*.txt
+debate*.json
 .DS_Store
 .env
 __pycache__/

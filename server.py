@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 load_dotenv()
@@ -31,6 +32,18 @@ app.add_middleware(
 
 STATIC_DIR = Path(__file__).parent / "static"
 STATIC_DIR.mkdir(exist_ok=True)
+
+AVATARS_DIR = Path(__file__).parent / "avatars"
+AVATARS_DIR.mkdir(exist_ok=True)
+app.mount("/avatars", StaticFiles(directory=str(AVATARS_DIR)), name="avatars")
+
+
+def _avatar_url_for_name(name: str) -> str | None:
+    slug = name.lower().replace(" ", "_")
+    for ext in (".jpg", ".png"):
+        if (AVATARS_DIR / f"{slug}{ext}").is_file():
+            return f"/avatars/{slug}{ext}"
+    return None
 
 
 # ──────────────────────────────────────────────────────── models ──
@@ -183,6 +196,7 @@ async def get_philosophers():
             "name": name,
             "era": cfg["era"],
             "description": cfg["description"],
+            "avatar_url": _avatar_url_for_name(name),
         }
         for name, cfg in PHILOSOPHERS.items()
     ]
