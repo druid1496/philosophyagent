@@ -35,10 +35,13 @@ START
 
 ```
 philosophyagent/
-├── main.py                  # entry point — CLI with --topic, --turns, --philosophers, --save
+├── main.py                  # CLI entry point — --topic, --turns, --philosophers, --save
+├── server.py                # FastAPI web server — streams debates via SSE, serves the UI
 ├── config.py                # model names, philosopher registry
 ├── requirements.txt
 ├── .env.example
+├── static/
+│   └── index.html           # Web UI — setup, live debate stream, past debate replay
 ├── texts/
 │   ├── plato.txt            # RAG source: Forms, Cave, Justice, Soul, Eros
 │   ├── kant.txt             # RAG source: Categorical Imperative, Transcendental Idealism, Dignity
@@ -71,7 +74,22 @@ cp .env.example .env
 # open .env and fill in your OPENAI_API_KEY
 ```
 
-### 3. Run
+### 3a. Run the web UI (recommended)
+
+```bash
+python server.py
+# then open http://localhost:8000 in your browser
+```
+
+Or with auto-reload during development:
+
+```bash
+uvicorn server:app --reload --port 8000
+```
+
+The web UI lets you configure the topic, pick philosophers, set turns, watch the debate stream in real time, and replay any saved debate.
+
+### 3b. Run from the CLI
 
 ```bash
 # Print out help messages
