@@ -27,6 +27,14 @@ How much does it keep messages and debate_history?
     - Moderator checkpoint uses transcript text trimmed to about 12000 chars.
 - End-of-run output still uses the full messages list for transcript save/conclusion context.
 
+## Web UI (server.py)
+
+- FastAPI server with SSE streaming — each LangGraph node completion pushes its messages to the browser in real time.
+- Frontend (`static/index.html`) is a single-page app: setup screen → live debate arena → past debates replay.
+- Debates run via the UI are automatically saved as `debate_{timestamp}.json` (same format as `--save` from the CLI).
+- Start: `python server.py` → `http://localhost:8000`
+- The `/debates` endpoint scans for `debate_*.json` files in the working directory (wherever the server is launched from).
+
 ## Improvement Ideas
 
 - [ ] Moderator conclusion speech needs improvement.
