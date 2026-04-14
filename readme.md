@@ -7,14 +7,13 @@ A multi-agent system where philosopher AIs debate contemporary topics — ground
 ## Demo
 
 <p align="center">
-  <video
-    src="./demo.mp4"
-    controls
-    muted
-    playsinline
-    width="900"
-    style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);"
-  ></video>
+  <a href="./demo.mp4" title="Watch demo.mp4">
+    <img src="./static/demo-thumbnail.png" alt="Watch the Philosophy Debate Agent demo video" width="900" style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="./demo.mp4"><strong>▶ Watch Demo Video</strong></a>
 </p>
 
 ## How It Works
