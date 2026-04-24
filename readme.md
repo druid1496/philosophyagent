@@ -6,24 +6,27 @@ A multi-agent system where philosopher AIs debate contemporary topics — ground
 
 ## Demo
 
-<p align="center">
-  <a href="./demo.mp4" title="Watch demo.mp4">
-    <img src="./static/demo-thumbnail.png" alt="Watch the Philosophy Debate Agent demo video" width="900" style="max-width: 100%; border-radius: 12px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);" />
-  </a>
-</p>
+
+
+**[▶ Watch Demo Video](./demo.mp4)**
+
+## Screenshots
 
 <p align="center">
-  <a href="./demo.mp4"><strong>▶ Watch Demo Video</strong></a>
+  <img src="./screenshots/Screenshot1.png" alt="Screenshot 1" width="48%" />
+  <img src="./screenshots/Screenshot2.png" alt="Screenshot 2" width="48%" />
 </p>
+<p align="center">
+  <img src="./screenshots/Screenshot3.png" alt="Screenshot 3" width="48%" />
+  <img src="./screenshots/Screenshot4.png" alt="Screenshot 4" width="48%" />
+</p>
+
 
 ## How It Works
 
 1. **Philosopher Agents** — each philosopher (Plato, Kant, Nietzsche) is built from RAG over their own philosophical texts + a system prompt that keeps them in character. Every response is anchored to retrieved passages from their writings.
-
 2. **Debate Director** — after each philosopher speaks, decides who answers next (or when to stop), based on friction and pacing; may inject a short “chaos” provocation if the exchange is too tame.
-
 3. **Moderator Agent** — opens the debate (frames the topic, names the opening proponent), optionally **checkpoints** every *N* philosopher speeches (default 4, configurable via `--moderator-every`, `0` = off), and delivers the final synthesis conclusion.
-
 4. **LangGraph** — hub-style flow: opening → philosopher ↔ (optional moderator checkpoint every *N* speeches) ↔ Debate Director routing → … until cap or director ends → moderator conclusion.
 
 ### Debate Flow
@@ -133,7 +136,7 @@ python3 main.py --export-graph debate_graph.png
 },
 ```
 
-3. Run — no other changes needed.
+1. Run — no other changes needed.
 
 ---
 
@@ -154,3 +157,4 @@ EMBEDDING_MODEL = "text-embedding-3-small"
 - [LangChain](https://github.com/langchain-ai/langchain) — LLM chains, RAG, prompts
 - [FAISS](https://github.com/facebookresearch/faiss) — local vector store for philosopher texts
 - [OpenAI](https://platform.openai.com/) — `gpt-4o-mini` + `text-embedding-3-small`
+
