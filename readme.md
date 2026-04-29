@@ -78,9 +78,29 @@ philosophyagent/
 
 ### 1. Install dependencies
 
+macOS / Linux:
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Windows (PowerShell):
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+Windows (cmd):
+
+```bat
+python -m venv .venv
+.venv\Scripts\activate.bat
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
