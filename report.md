@@ -177,3 +177,35 @@ The system is opinionated by default but exposes the parameters that change the 
 - `--export-graph` — render the compiled LangGraph as a PNG.
 
 Model and temperature are set in `config.py`: `gpt-4o-mini` for everything by default (cheap iteration), with the Director on `0.45` and the philosophers/moderator on `0.7`. Embeddings use `text-embedding-3-small`.
+
+## Evaluation — How Well Did It Work
+
+The system was evaluated through qualitative expert review rather than benchmark-based quantitative testing. This choice followed directly from the project’s goals: the Philosophy Debate Agent was designed not simply to produce fluent text, but to generate debates that are philosophically meaningful, faithful to each thinker’s core commitments, and useful for learning. Those qualities are better assessed by expert readers than by a single automatic metric.
+
+To conduct this evaluation, two philosophy PhD students were invited to use the system, examine generated debates, and provide written feedback on its strengths and limitations. Their evaluations focused on whether the debates were intellectually interesting, whether the philosophers sounded historically and conceptually plausible, and whether the interaction format actually helped users think more clearly about the issues under discussion.
+
+Overall, the feedback suggests that the project is already successful as an educational and exploratory tool. One evaluator described it as a “fascinating project” that could help users appreciate how major moral philosophers would approach important issues, including questions they never directly addressed in their own time. The same evaluation also noted that some generated arguments were genuinely insightful and could even be interesting to professional philosophers, citing as an example a reparations debate in which the Kant agent raised a nontrivial deontological concern about instrumentalizing victims’ suffering.
+
+The second evaluation reinforced this positive judgment while also making clear where the current system falls short. In particular, it suggested that the interface and interaction design were already usable enough to support real engagement, but that the quality of debate still depended heavily on whether the agents genuinely confronted one another’s claims rather than merely producing adjacent monologues. This point is especially important for a project whose value depends on the tension between competing philosophical frameworks.
+
+Across the two evaluations, several recurring weaknesses emerged. First, debates sometimes failed to distribute participation well: when more than two philosophers were selected, one or more participants could remain marginal, with the discussion dominated by the first pair of speakers. Second, some philosophers used language that sounded too modern or too generic, which weakened the historical distinctiveness of their voices.
+
+Third, and perhaps most importantly, the evaluators pointed to a problem of insufficient argumentative contact between speakers. In some cases, philosophers appeared to respond only to the generated wording of the previous turn rather than to the deeper position represented by the other thinker’s texts. This could produce exchanges in which the participants “talk past each other,” as in the Mill–Nietzsche example noted in the feedback, where the dialogue sounded rhetorically polished but did not always develop into a sharp philosophical confrontation.
+
+The evaluations therefore show both that the system works and that its limitations are philosophically revealing. It already succeeds in producing engaging, often thought-provoking debates that make philosophical ideas more vivid for users, but it still needs improvement in speaker balancing, historical diction, and deeper inter-agent understanding before it can be considered a stronger tool for rigorous philosophical interpretation.
+
+## Conclusions — What Did We Learn
+
+This project demonstrates that a multi-agent, retrieval-grounded architecture can make philosophy more interactive, accessible, and memorable. By assigning each philosopher a distinct textual grounding and placing them within a structured debate loop, the system can do more than summarize positions: it can stage disagreement in a way that helps users see what is really at stake in a moral or political question.
+
+One major lesson is that orchestration matters as much as generation. The project’s strongest outputs did not come only from having philosopher-specific source texts, but from the interaction between retrieval, turn-taking, rebuttal, moderation, and conclusion. In other words, philosophical value emerged not just from individual responses, but from the design of the argumentative structure as a whole.
+
+A second lesson is that textual grounding alone does not guarantee philosophical depth. The evaluations showed that a system can be grounded in canonical texts and still misread an opponent, rely on language that feels historically misplaced, or produce exchanges that are elegant on the surface but insufficiently engaged at the level of argument. For philosophical dialogue, faithfulness requires not only accurate quotation, but also accurate confrontation.
+
+A third lesson concerns the project’s current best use case. In its present form, the Philosophy Debate Agent is most effective as an educational and exploratory system rather than as a substitute for professional philosophical scholarship. It helps users approach difficult questions through multiple classical frameworks, and it makes abstract doctrines more vivid by showing them in conflict rather than in isolated exposition.
+
+At the same time, the evaluations provide a clear roadmap for improvement. Future work should focus on better turn allocation across selected philosophers, stronger control over historically appropriate vocabulary and style, and richer cross-agent engagement in which each philosopher can respond not only to generated summaries of an opponent’s claims but also to relevant passages from that opponent’s original texts. More broadly, the project suggests that large language models are especially promising not when they replace interpretation, but when they create structured spaces in which interpretation becomes more active, dialogical, and intellectually engaging.
+
+## Acknowledgements
+
+Special thanks are due to the project’s two evaluators, Lang Ming, a philosophy PhD candidate at the University of Stuttgart and the University of Athens, and Yanjie Ding, a philosophy doctoral student at the University of Virginia. Their careful evaluations of the generated debates have been invaluable for clarifying both the project’s pedagogical promise and the directions for future improvement.
